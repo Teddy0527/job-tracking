@@ -106,45 +106,144 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   }
 
   return (
-    <Box>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f6f7fb' }}>
       {/* Header */}
-      <AppBar position="static" elevation={2}>
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            📊 Job Tracker - {user.email}
-          </Typography>
+      <AppBar 
+        position="static" 
+        elevation={0}
+        sx={{
+          bgcolor: 'white',
+          color: '#323338',
+          borderBottom: '1px solid #e1e4e7',
+        }}
+      >
+        <Toolbar sx={{ minHeight: '64px !important' }}>
+          <Box display="flex" alignItems="center" gap={2} sx={{ flexGrow: 1 }}>
+            <Box
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: '8px',
+                background: 'linear-gradient(135deg, #6c5dd3 0%, #7b68ee 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontWeight: 'bold',
+                fontSize: '14px',
+              }}
+            >
+              JT
+            </Box>
+            <Typography 
+              variant="h6" 
+              component="div" 
+              sx={{ 
+                fontWeight: 600,
+                color: '#323338',
+                fontSize: '20px',
+              }}
+            >
+              Job Tracker
+            </Typography>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: '#676879',
+                ml: 1,
+                fontSize: '14px',
+              }}
+            >
+              {user.email}
+            </Typography>
+          </Box>
           
-          <ToggleButtonGroup
-            value={viewMode}
-            exclusive
-            onChange={handleViewModeChange}
-            size="small"
-            sx={{ mr: 2 }}
-          >
-            <ToggleButton value="kanban" aria-label="kanban view">
-              <KanbanIcon fontSize="small" />
-            </ToggleButton>
-            <ToggleButton value="table" aria-label="table view">
-              <TableIcon fontSize="small" />
-            </ToggleButton>
-          </ToggleButtonGroup>
+          <Box display="flex" alignItems="center" gap={2}>
+            <ToggleButtonGroup
+              value={viewMode}
+              exclusive
+              onChange={handleViewModeChange}
+              size="small"
+              sx={{ 
+                '& .MuiToggleButton-root': {
+                  border: '1px solid #e1e4e7',
+                  color: '#676879',
+                  '&.Mui-selected': {
+                    bgcolor: '#6c5dd3',
+                    color: 'white',
+                    '&:hover': {
+                      bgcolor: '#5a4fcf',
+                    },
+                  },
+                  '&:hover': {
+                    bgcolor: '#f1f2f4',
+                  },
+                },
+              }}
+            >
+              <ToggleButton value="kanban" aria-label="kanban view">
+                <KanbanIcon fontSize="small" />
+              </ToggleButton>
+              <ToggleButton value="table" aria-label="table view">
+                <TableIcon fontSize="small" />
+              </ToggleButton>
+            </ToggleButtonGroup>
 
-          <IconButton color="inherit" onClick={handleLogout}>
-            <LogoutIcon />
-          </IconButton>
+            <IconButton 
+              onClick={handleLogout}
+              sx={{
+                color: '#676879',
+                '&:hover': {
+                  bgcolor: '#f1f2f4',
+                },
+              }}
+            >
+              <LogoutIcon />
+            </IconButton>
+          </Box>
         </Toolbar>
       </AppBar>
 
       {/* Main Content */}
-      <Container maxWidth="xl" sx={{ py: 3 }}>
-        <Box mb={3} display="flex" justifyContent="space-between" alignItems="center">
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Box mb={4} display="flex" justifyContent="space-between" alignItems="flex-start">
           <Box>
-            <Typography variant="h4" component="h1" gutterBottom>
+            <Typography 
+              variant="h3" 
+              component="h1" 
+              sx={{ 
+                fontWeight: 700,
+                color: '#323338',
+                fontSize: '32px',
+                mb: 1,
+              }}
+            >
               企業管理ダッシュボード
             </Typography>
-            <Typography variant="body1" color="text.secondary">
-              応募中の企業: {companies.length}社
-            </Typography>
+            <Box display="flex" alignItems="center" gap={3}>
+              <Typography 
+                variant="body1" 
+                sx={{
+                  color: '#676879',
+                  fontSize: '16px',
+                }}
+              >
+                応募中の企業: <strong style={{ color: '#323338' }}>{companies.length}社</strong>
+              </Typography>
+              <Box
+                sx={{
+                  px: 2,
+                  py: 0.5,
+                  bgcolor: companies.length > 0 ? '#e1f5fe' : '#fff3e0',
+                  color: companies.length > 0 ? '#0277bd' : '#f57c00',
+                  borderRadius: '16px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                }}
+              >
+                {companies.length > 0 ? 'アクティブ' : '企業を追加してください'}
+              </Box>
+            </Box>
           </Box>
           
           <Button
@@ -152,6 +251,19 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             startIcon={<AddIcon />}
             onClick={handleAddCompany}
             size="large"
+            sx={{
+              bgcolor: '#6c5dd3',
+              color: 'white',
+              borderRadius: '8px',
+              fontWeight: 600,
+              fontSize: '14px',
+              textTransform: 'none',
+              boxShadow: '0 2px 8px rgba(108, 93, 211, 0.3)',
+              '&:hover': {
+                bgcolor: '#5a4fcf',
+                boxShadow: '0 4px 12px rgba(108, 93, 211, 0.4)',
+              },
+            }}
           >
             企業を追加
           </Button>

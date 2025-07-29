@@ -127,13 +127,40 @@ const CompanyTable: React.FC<CompanyTableProps> = ({
       );
     })
     .sort((a, b) => {
-      let aValue: any = a[sortField];
-      let bValue: any = b[sortField];
+      let aValue: any;
+      let bValue: any;
 
-      if (sortField === 'updated_at') {
-        aValue = new Date(aValue).getTime();
-        bValue = new Date(bValue).getTime();
-      } else if (typeof aValue === 'string') {
+      switch (sortField) {
+        case 'name':
+          aValue = a.name;
+          bValue = b.name;
+          break;
+        case 'industry':
+          aValue = a.industry || '';
+          bValue = b.industry || '';
+          break;
+        case 'position':
+          aValue = a.position || '';
+          bValue = b.position || '';
+          break;
+        case 'current_step':
+          aValue = a.current_step;
+          bValue = b.current_step;
+          break;
+        case 'status':
+          aValue = a.status;
+          bValue = b.status;
+          break;
+        case 'updated_at':
+          aValue = new Date(a.updated_at).getTime();
+          bValue = new Date(b.updated_at).getTime();
+          break;
+        default:
+          aValue = '';
+          bValue = '';
+      }
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
         aValue = aValue.toLowerCase();
         bValue = bValue.toLowerCase();
       }

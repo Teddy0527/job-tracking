@@ -20,20 +20,28 @@ import {
   Link as LinkIcon,
   Event as EventIcon,
   DragIndicator as DragIcon,
+  Schedule as ScheduleIcon,
+  Description as DocumentIcon,
 } from '@mui/icons-material';
-import { Company, SELECTION_STEPS } from '../types';
+import { Company, SELECTION_STEPS, Schedule, CompanyDocument } from '../types';
 
 interface DraggableCompanyCardProps {
   company: Company;
+  schedules?: Schedule[];
+  documents?: CompanyDocument[];
   onEdit: (company: Company) => void;
   onDelete: (id: string) => void;
+  onViewDetail?: (company: Company) => void;
   isDragging?: boolean;
 }
 
 const DraggableCompanyCard: React.FC<DraggableCompanyCardProps> = ({
   company,
+  schedules = [],
+  documents = [],
   onEdit,
   onDelete,
+  onViewDetail,
   isDragging = false,
 }) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -78,6 +86,17 @@ const DraggableCompanyCard: React.FC<DraggableCompanyCardProps> = ({
     handleMenuClose();
   };
 
+  const handleCardClick = (event: React.MouseEvent) => {
+    // ドラッグハンドルやメニューボタンがクリックされた場合は詳細表示をしない
+    if (!sortableIsDragging && 
+        event.target === event.currentTarget || 
+        (event.target as HTMLElement).closest('.card-content')) {
+      if (onViewDetail) {
+        onViewDetail(company);
+      }
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case '合格':
@@ -92,33 +111,47 @@ const DraggableCompanyCard: React.FC<DraggableCompanyCardProps> = ({
   };
 
   const getStepColor = (stepId: number) => {
-    if (stepId <= 2) return '#1976d2'; // Blue
-    if (stepId <= 4) return '#ed6c02'; // Orange
-    return '#2e7d32'; // Green
+    switch (stepId) {
+      case 1:
+        return '#579bfc'; // monday.com blue
+      case 2:
+        return '#a25ddc'; // monday.com purple
+      case 3:
+        return '#ff642e'; // monday.com orange
+      case 4:
+        return '#e2445c'; // monday.com red
+      case 5:
+        return '#00c875'; // monday.com green
+      default:
+        return '#676879';
+    }
   };
 
   return (
     <Card
       ref={setNodeRef}
       style={style}
-      elevation={sortableIsDragging ? 6 : 2}
+      elevation={0}
+      onClick={handleCardClick}
       sx={{
         mb: 2,
-        borderRadius: 2,
-        cursor: sortableIsDragging ? 'grabbing' : 'grab',
-        transition: 'all 0.2s ease-in-out',
-        transform: sortableIsDragging ? 'rotate(5deg)' : 'none',
-        backgroundColor: sortableIsDragging ? alpha('#1976d2', 0.1) : 'white',
-        border: sortableIsDragging ? '2px solid #1976d2' : '1px solid transparent',
+        borderRadius: '12px',
+        border: '1px solid #e1e4e7',
+        bgcolor: 'white',
+        cursor: sortableIsDragging ? 'grabbing' : 'pointer',
+        transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        transform: sortableIsDragging ? 'rotate(3deg)' : 'none',
+        backgroundColor: sortableIsDragging ? alpha(getStepColor(company.current_step), 0.08) : 'white',
+        borderColor: sortableIsDragging ? getStepColor(company.current_step) : '#e1e4e7',
         '&:hover': {
-          elevation: 4,
-          transform: sortableIsDragging ? 'rotate(5deg)' : 'translateY(-2px)',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+          boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)',
+          transform: sortableIsDragging ? 'rotate(3deg)' : 'translateY(-4px)',
+          borderColor: getStepColor(company.current_step),
         },
       }}
       {...attributes}
     >
-      <CardContent sx={{ pb: 2 }}>
+      <CardContent className="card-content" sx={{ p: 3, '&:last-child': { pb: 3 } }}>
         {/* Header with Drag Handle */}
         <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
           <Box display="flex" alignItems="center" gap={1} flex={1}>
@@ -147,11 +180,6 @@ const DraggableCompanyCard: React.FC<DraggableCompanyCardProps> = ({
               <Typography variant="subtitle1" component="h3" noWrap fontWeight="medium">
                 {company.name}
               </Typography>
-              {company.industry && (
-                <Typography variant="caption" color="text.secondary" noWrap>
-                  {company.industry}
-                </Typography>
-              )}
             </Box>
           </Box>
           
@@ -189,7 +217,7 @@ const DraggableCompanyCard: React.FC<DraggableCompanyCardProps> = ({
           />
         </Box>
 
-        {/* Status and Position */}
+        {/* Status */}
         <Box display="flex" gap={0.5} mb={2} flexWrap="wrap">
           <Chip
             label={company.status}
@@ -205,27 +233,73 @@ const DraggableCompanyCard: React.FC<DraggableCompanyCardProps> = ({
               },
             }}
           />
-          {company.position && (
-            <Chip
-              label={company.position}
-              size="small"
-              variant="outlined"
-              color="default"
-              sx={{
-                height: 20,
-                fontSize: '0.7rem',
-                maxWidth: 120,
-                '& .MuiChip-label': {
-                  px: 1,
-                  py: 0,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                },
-              }}
-            />
-          )}
         </Box>
+
+        {/* Schedules */}
+        {schedules.length > 0 && (
+          <Box mb={2}>
+            <Box display="flex" alignItems="center" gap={1} mb={1}>
+              <ScheduleIcon fontSize="small" color="action" />
+              <Typography variant="body2" fontWeight="medium" fontSize="0.8rem">
+                スケジュール
+              </Typography>
+            </Box>
+            {schedules.slice(0, 1).map((schedule) => (
+              <Box key={schedule.id} display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                <Typography variant="body2" color="text.secondary" fontSize="0.75rem" noWrap>
+                  {schedule.title}
+                </Typography>
+                <Typography variant="body2" color="primary" fontSize="0.75rem">
+                  {new Date(schedule.date).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}
+                </Typography>
+              </Box>
+            ))}
+            {schedules.length > 1 && (
+              <Typography variant="caption" color="text.secondary" fontSize="0.7rem">
+                他 {schedules.length - 1} 件
+              </Typography>
+            )}
+          </Box>
+        )}
+
+        {/* Documents */}
+        {documents.length > 0 && (
+          <Box mb={2}>
+            <Box display="flex" alignItems="center" gap={1} mb={1}>
+              <DocumentIcon fontSize="small" color="action" />
+              <Typography variant="body2" fontWeight="medium" fontSize="0.8rem">
+                資料
+              </Typography>
+            </Box>
+            {documents.slice(0, 1).map((document) => (
+              <Box key={document.id} mb={0.5}>
+                <Typography
+                  variant="body2"
+                  color="primary"
+                  fontSize="0.75rem"
+                  component="a"
+                  href={document.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    textDecoration: 'none',
+                    '&:hover': {
+                      textDecoration: 'underline',
+                    },
+                  }}
+                  noWrap
+                >
+                  {document.title}
+                </Typography>
+              </Box>
+            ))}
+            {documents.length > 1 && (
+              <Typography variant="caption" color="text.secondary" fontSize="0.7rem">
+                他 {documents.length - 1} 件
+              </Typography>
+            )}
+          </Box>
+        )}
 
         {/* Links */}
         {company.mypage_url && (

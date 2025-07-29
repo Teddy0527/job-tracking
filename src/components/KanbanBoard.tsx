@@ -3,7 +3,6 @@ import {
   Box,
   Paper,
   Typography,
-  Badge,
 } from '@mui/material';
 import {
   DndContext,
@@ -21,11 +20,12 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Company, SELECTION_STEPS } from '../types';
+import { Company, SELECTION_STEPS, Schedule, CompanyDocument } from '../types';
 import CompanyCard from './CompanyCard';
 import DraggableCompanyCard from './DraggableCompanyCard';
+import CompanyDetailDialog from './CompanyDetailDialog';
 import DropZone from './DropZone';
-import { deleteCompany, updateCompany } from '../services/supabase';
+import { deleteCompany, updateCompany, getSchedules, getCompanyDocuments } from '../services/supabase';
 
 interface KanbanBoardProps {
   companies: Company[];
@@ -42,6 +42,10 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [draggedCompany, setDraggedCompany] = React.useState<Company | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [overId, setOverId] = React.useState<string | null>(null);
+  const [companySchedules, setCompanySchedules] = React.useState<Record<string, Schedule[]>>({});
+  const [companyDocuments, setCompanyDocuments] = React.useState<Record<string, CompanyDocument[]>>({});
+  const [selectedCompany, setSelectedCompany] = React.useState<Company | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = React.useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -51,6 +55,49 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }),
     useSensor(KeyboardSensor)
   );
+
+  // Load schedules and documents for all companies
+  React.useEffect(() => {
+    const loadSchedulesAndDocuments = async () => {
+      console.log('Loading schedules and documents for companies:', companies.length);
+      const schedules: Record<string, Schedule[]> = {};
+      const documents: Record<string, CompanyDocument[]> = {};
+
+      for (const company of companies) {
+        try {
+          const { data: scheduleData, error: scheduleError } = await getSchedules(company.id);
+          const { data: documentData, error: documentError } = await getCompanyDocuments(company.id);
+          
+          if (scheduleError) {
+            console.error(`Error loading schedules for company ${company.name}:`, scheduleError);
+          }
+          if (documentError) {
+            console.error(`Error loading documents for company ${company.name}:`, documentError);
+          }
+          
+          schedules[company.id] = scheduleData || [];
+          documents[company.id] = documentData || [];
+          
+          console.log(`Loaded for ${company.name}:`, {
+            schedules: schedules[company.id].length,
+            documents: documents[company.id].length
+          });
+        } catch (error) {
+          console.error(`Error loading data for company ${company.id}:`, error);
+          schedules[company.id] = [];
+          documents[company.id] = [];
+        }
+      }
+
+      setCompanySchedules(schedules);
+      setCompanyDocuments(documents);
+      console.log('All schedules and documents loaded:', { schedules, documents });
+    };
+
+    if (companies.length > 0) {
+      loadSchedulesAndDocuments();
+    }
+  }, [companies]);
 
   const handleDeleteCompany = async (id: string) => {
     try {
@@ -65,6 +112,22 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       console.error('Error deleting company:', error);
       alert('削除に失敗しました。');
     }
+  };
+
+  const handleViewDetail = (company: Company) => {
+    setSelectedCompany(company);
+    setDetailDialogOpen(true);
+  };
+
+  const handleCloseDetail = () => {
+    setDetailDialogOpen(false);
+    setSelectedCompany(null);
+  };
+
+  const handleEditFromDetail = (company: Company) => {
+    setDetailDialogOpen(false);
+    setSelectedCompany(null);
+    onEditCompany(company);
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -129,37 +192,37 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }
   };
 
-  const getColumnColor = (stepId: number) => {
-    switch (stepId) {
-      case 1:
-        return '#e3f2fd'; // Light blue
-      case 2:
-        return '#f3e5f5'; // Light purple
-      case 3:
-        return '#fff3e0'; // Light orange
-      case 4:
-        return '#ffebee'; // Light red
-      case 5:
-        return '#e8f5e8'; // Light green
-      default:
-        return '#f5f5f5';
-    }
-  };
-
   const getColumnBorderColor = (stepId: number) => {
     switch (stepId) {
       case 1:
-        return '#2196f3'; // Blue
+        return '#579bfc'; // monday.com blue
       case 2:
-        return '#9c27b0'; // Purple
+        return '#a25ddc'; // monday.com purple
       case 3:
-        return '#ff9800'; // Orange
+        return '#ff642e'; // monday.com orange
       case 4:
-        return '#f44336'; // Red
+        return '#e2445c'; // monday.com red
       case 5:
-        return '#4caf50'; // Green
+        return '#00c875'; // monday.com green
       default:
-        return '#ccc';
+        return '#c4c4c4';
+    }
+  };
+
+  const getColumnHeaderColor = (stepId: number) => {
+    switch (stepId) {
+      case 1:
+        return '#579bfc';
+      case 2:
+        return '#a25ddc';
+      case 3:
+        return '#ff642e';
+      case 4:
+        return '#e2445c';
+      case 5:
+        return '#00c875';
+      default:
+        return '#676879';
     }
   };
 
@@ -172,7 +235,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       onDragEnd={handleDragEnd}
     >
       <Box>
-        <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto', pb: 2 }}>
+        <Box sx={{ display: 'flex', gap: 3, overflowX: 'auto', pb: 3 }}>
           {SELECTION_STEPS.map((step) => {
             const stepCompanies = companies.filter(
               (company) => company.current_step === step.id
@@ -181,47 +244,90 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
             return (
               <Paper
                 key={step.id}
-                elevation={1}
+                elevation={0}
                 sx={{
-                  minWidth: 280,
-                  flex: '1 1 280px',
-                  minHeight: '70vh',
-                  backgroundColor: getColumnColor(step.id),
-                  borderTop: `4px solid ${getColumnBorderColor(step.id)}`,
-                  borderRadius: 2,
-                  transition: 'background-color 0.2s ease',
+                  minWidth: 300,
+                  flex: '1 1 300px',
+                  minHeight: '75vh',
+                  backgroundColor: 'white',
+                  border: '1px solid #e1e4e7',
+                  borderRadius: '12px',
+                  transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                   '&:hover': {
-                    backgroundColor: activeId ? 'rgba(25, 118, 210, 0.08)' : getColumnColor(step.id),
+                    boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)',
+                    transform: 'translateY(-2px)',
                   },
                 }}
               >
                 {/* Column Header */}
                 <Box
                   sx={{
-                    p: 2,
-                    borderBottom: '1px solid',
-                    borderColor: 'grey.200',
+                    p: 4,
+                    borderBottom: '1px solid #e1e4e7',
                     bgcolor: 'white',
-                    borderTopLeftRadius: 8,
-                    borderTopRightRadius: 8,
+                    borderTopLeftRadius: 12,
+                    borderTopRightRadius: 12,
+                    position: 'relative',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '4px',
+                      background: getColumnBorderColor(step.id),
+                      borderTopLeftRadius: 12,
+                      borderTopRightRadius: 12,
+                    },
                   }}
                 >
-                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Typography variant="h6" fontWeight="bold" noWrap>
-                      {step.name}
-                    </Typography>
-                    <Badge
-                      badgeContent={stepCompanies.length}
-                      color="primary"
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                    <Box display="flex" alignItems="center" gap={1.5}>
+                      <Box
+                        sx={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: '50%',
+                          backgroundColor: getColumnHeaderColor(step.id),
+                        }}
+                      />
+                      <Typography 
+                        variant="h6" 
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: '18px',
+                          color: '#323338',
+                        }}
+                      >
+                        {step.name}
+                      </Typography>
+                    </Box>
+                    <Box
                       sx={{
-                        '& .MuiBadge-badge': {
-                          backgroundColor: getColumnBorderColor(step.id),
-                          color: 'white',
-                        },
+                        minWidth: 40,
+                        height: 40,
+                        borderRadius: '12px',
+                        backgroundColor: getColumnHeaderColor(step.id),
+                        color: 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '18px',
+                        fontWeight: 800,
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                       }}
-                    />
+                    >
+                      {stepCompanies.length}
+                    </Box>
                   </Box>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography 
+                    variant="caption" 
+                    sx={{
+                      color: '#676879',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                    }}
+                  >
                     進捗: {step.progress}%
                   </Typography>
                 </Box>
@@ -229,8 +335,24 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 {/* Drop Zone */}
                 <Box
                   sx={{
-                    maxHeight: 'calc(70vh - 80px)',
+                    maxHeight: 'calc(75vh - 120px)',
                     overflowY: 'auto',
+                    px: 2,
+                    py: 1,
+                    '&::-webkit-scrollbar': {
+                      width: 6,
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      background: '#f1f2f4',
+                      borderRadius: 3,
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      background: '#c4c7d0',
+                      borderRadius: 3,
+                      '&:hover': {
+                        background: '#9ca3af',
+                      },
+                    },
                   }}
                 >
                   <DropZone
@@ -241,15 +363,82 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                       items={stepCompanies.map(c => c.id)}
                       strategy={verticalListSortingStrategy}
                     >
-                      {stepCompanies.map((company) => (
-                        <DraggableCompanyCard
-                          key={company.id}
-                          company={company}
-                          onEdit={onEditCompany}
-                          onDelete={handleDeleteCompany}
-                          isDragging={activeId === company.id}
-                        />
-                      ))}
+                      {stepCompanies.length === 0 ? (
+                        <Box
+                          sx={{
+                            minHeight: '250px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            textAlign: 'center',
+                            mx: 1,
+                            my: 2,
+                            border: '2px dashed #e1e4e7',
+                            borderRadius: '12px',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              borderColor: getColumnHeaderColor(step.id),
+                              backgroundColor: `${getColumnHeaderColor(step.id)}08`,
+                            },
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: '50%',
+                              backgroundColor: `${getColumnHeaderColor(step.id)}15`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              mb: 2,
+                            }}
+                          >
+                            <Typography
+                              sx={{
+                                fontSize: '20px',
+                                color: getColumnHeaderColor(step.id),
+                              }}
+                            >
+                              +
+                            </Typography>
+                          </Box>
+                          <Typography 
+                            variant="body2"
+                            sx={{
+                              color: '#676879',
+                              fontSize: '13px',
+                              fontWeight: 500,
+                              mb: 0.5,
+                            }}
+                          >
+                            企業をここにドラッグ
+                          </Typography>
+                          <Typography 
+                            variant="caption"
+                            sx={{
+                              color: '#9ca3af',
+                              fontSize: '11px',
+                            }}
+                          >
+                            または「企業を追加」ボタンから追加
+                          </Typography>
+                        </Box>
+                      ) : (
+                        stepCompanies.map((company) => (
+                          <DraggableCompanyCard
+                            key={company.id}
+                            company={company}
+                            schedules={companySchedules[company.id] || []}
+                            documents={companyDocuments[company.id] || []}
+                            onEdit={onEditCompany}
+                            onDelete={handleDeleteCompany}
+                            onViewDetail={handleViewDetail}
+                            isDragging={activeId === company.id}
+                          />
+                        ))
+                      )}
                     </SortableContext>
                   </DropZone>
                 </Box>
@@ -263,47 +452,25 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
           {activeId && draggedCompany ? (
             <CompanyCard
               company={draggedCompany}
+              schedules={companySchedules[draggedCompany.id] || []}
+              documents={companyDocuments[draggedCompany.id] || []}
               onEdit={() => {}}
               onDelete={() => {}}
+              onViewDetail={() => {}}
             />
           ) : null}
         </DragOverlay>
       </Box>
 
-      {/* Summary */}
-      <Box mt={3}>
-        <Paper elevation={1} sx={{ p: 2, borderRadius: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            📊 進捗サマリー
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: 2 }}>
-            {SELECTION_STEPS.map((step) => {
-              const count = companies.filter(
-                (company) => company.current_step === step.id
-              ).length;
-              const percentage = companies.length > 0 ? (count / companies.length) * 100 : 0;
-
-              return (
-                <Box key={step.id} textAlign="center" sx={{ minWidth: 120 }}>
-                  <Typography
-                    variant="h4"
-                    fontWeight="bold"
-                    color={getColumnBorderColor(step.id)}
-                  >
-                    {count}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {step.name}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    ({percentage.toFixed(1)}%)
-                  </Typography>
-                </Box>
-              );
-            })}
-          </Box>
-        </Paper>
-      </Box>
+      {/* Company Detail Dialog */}
+      <CompanyDetailDialog
+        open={detailDialogOpen}
+        company={selectedCompany}
+        schedules={selectedCompany ? companySchedules[selectedCompany.id] || [] : []}
+        documents={selectedCompany ? companyDocuments[selectedCompany.id] || [] : []}
+        onClose={handleCloseDetail}
+        onEdit={handleEditFromDetail}
+      />
     </DndContext>
   );
 };

@@ -14,6 +14,24 @@ export interface Company {
   updated_at: string;
 }
 
+export interface Schedule {
+  id: string;
+  company_id: string;
+  title: string;
+  date: string; // YYYY-MM-DD format
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CompanyDocument {
+  id: string;
+  company_id: string;
+  title: string;
+  url: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Event {
   id: string;
   company_id: string;

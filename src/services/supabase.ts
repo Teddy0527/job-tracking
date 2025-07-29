@@ -70,7 +70,10 @@ export const createCompany = async (company: Omit<any, 'id' | 'user_id' | 'creat
     throw new Error('Not authenticated');
   }
 
-  const companyData = { ...company, user_id: user.id };
+  const companyData = { 
+    ...company, 
+    user_id: user.id
+  };
   console.log('Company data to insert:', companyData);
 
   const { data, error } = await supabase
@@ -103,5 +106,117 @@ export const deleteCompany = async (id: string) => {
     .from('companies')
     .delete()
     .eq('id', id);
+  return { error };
+};
+
+// Schedule helper functions
+export const getSchedules = async (companyId: string) => {
+  const { data, error } = await supabase
+    .from('schedules')
+    .select('*')
+    .eq('company_id', companyId)
+    .order('date', { ascending: true });
+  return { data, error };
+};
+
+export const createSchedules = async (companyId: string, schedules: Array<{title: string, date: string}>) => {
+  if (schedules.length === 0) return { data: [], error: null };
+  
+  const scheduleData = schedules
+    .filter(s => s.title.trim() && s.date)
+    .map(schedule => ({
+      company_id: companyId,
+      title: schedule.title.trim(),
+      date: schedule.date
+    }));
+
+  if (scheduleData.length === 0) return { data: [], error: null };
+
+  const { data, error } = await supabase
+    .from('schedules')
+    .insert(scheduleData)
+    .select();
+  return { data, error };
+};
+
+export const updateSchedule = async (id: string, updates: Partial<{title: string, date: string}>) => {
+  const { data, error } = await supabase
+    .from('schedules')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  return { data, error };
+};
+
+export const deleteSchedule = async (id: string) => {
+  const { error } = await supabase
+    .from('schedules')
+    .delete()
+    .eq('id', id);
+  return { error };
+};
+
+export const deleteCompanySchedules = async (companyId: string) => {
+  const { error } = await supabase
+    .from('schedules')
+    .delete()
+    .eq('company_id', companyId);
+  return { error };
+};
+
+// Document helper functions
+export const getCompanyDocuments = async (companyId: string) => {
+  const { data, error } = await supabase
+    .from('company_documents')
+    .select('*')
+    .eq('company_id', companyId)
+    .order('created_at', { ascending: false });
+  return { data, error };
+};
+
+export const createCompanyDocuments = async (companyId: string, documents: Array<{title: string, url: string}>) => {
+  if (documents.length === 0) return { data: [], error: null };
+  
+  const documentData = documents
+    .filter(d => d.title.trim() && d.url.trim())
+    .map(document => ({
+      company_id: companyId,
+      title: document.title.trim(),
+      url: document.url.trim()
+    }));
+
+  if (documentData.length === 0) return { data: [], error: null };
+
+  const { data, error } = await supabase
+    .from('company_documents')
+    .insert(documentData)
+    .select();
+  return { data, error };
+};
+
+export const updateCompanyDocument = async (id: string, updates: Partial<{title: string, url: string}>) => {
+  const { data, error } = await supabase
+    .from('company_documents')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  return { data, error };
+};
+
+export const deleteCompanyDocument = async (id: string) => {
+  const { error } = await supabase
+    .from('company_documents')
+    .delete()
+    .eq('id', id);
+  return { error };
+};
+
+export const deleteCompanyDocuments = async (companyId: string) => {
+  const { error } = await supabase
+    .from('company_documents')
+    .delete()
+    .eq('company_id', companyId);
   return { error };
 };
