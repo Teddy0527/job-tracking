@@ -10,6 +10,7 @@ export interface Company {
   status: '合格' | '不合格' | '選考中';
   memo?: string;
   application_date?: string; // YYYY-MM-DD format
+  sort_order?: number; // For ordering within steps
   created_at: string;
   updated_at: string;
 }
