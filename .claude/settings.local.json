@@ -14,7 +14,10 @@
       "Bash(cd:*)",
       "Bash(vercel ls:*)",
       "Bash(vercel env add:*)",
-      "Bash(vercel:*)"
+      "Bash(vercel:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm start)",
+      "Bash(pkill:*)"
     ],
     "deny": []
   }
