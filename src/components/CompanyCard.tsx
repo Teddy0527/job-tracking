@@ -14,7 +14,8 @@ import {
   MoreVert as MoreIcon,
   Business as BusinessIcon,
   Link as LinkIcon,
-  Event as EventIcon,
+  Schedule as ScheduleIcon,
+  Description as DocumentIcon,
 } from '@mui/icons-material';
 import { Company, SELECTION_STEPS, Schedule, CompanyDocument } from '../types';
 
@@ -231,206 +232,48 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
           />
         </Box>
 
-        {/* Schedules */}
-        {schedules.length > 0 && (
-          <Box mb={2}>
-            <Box display="flex" alignItems="center" gap={1} mb={1}>
-              <EventIcon 
+        {/* Compact indicators */}
+        <Box display="flex" alignItems="center" gap={1.5} mb={2}>
+          {schedules.length > 0 && (
+            <Box display="flex" alignItems="center" gap={0.5}>
+              <ScheduleIcon 
                 fontSize="small" 
-                sx={{ color: '#676879', fontSize: '16px' }}
+                sx={{ color: getStepColor(company.current_step), fontSize: '16px' }}
               />
               <Typography 
                 variant="body2" 
-                sx={{
-                  color: '#323338',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                }}
-              >
-                スケジュール
-              </Typography>
-            </Box>
-            {schedules.slice(0, 2).map((schedule, index) => (
-              <Box key={schedule.id} display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
-                <Typography 
-                  variant="body2" 
-                  sx={{
-                    color: '#676879',
-                    fontSize: '12px',
-                    flex: 1,
-                  }}
-                >
-                  {schedule.title}
-                </Typography>
-                <Typography 
-                  variant="body2" 
-                  sx={{
-                    color: getStepColor(company.current_step),
-                    fontSize: '12px',
-                    fontWeight: 500,
-                  }}
-                >
-                  {new Date(schedule.date).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}
-                </Typography>
-              </Box>
-            ))}
-            {schedules.length > 2 && (
-              <Typography 
-                variant="caption" 
                 sx={{
                   color: '#676879',
-                  fontSize: '11px',
-                  fontStyle: 'italic',
-                }}
-              >
-                他 {schedules.length - 2} 件
-              </Typography>
-            )}
-          </Box>
-        )}
-
-        {/* Documents */}
-        {documents.length > 0 && (
-          <Box mb={2}>
-            <Box display="flex" alignItems="center" gap={1} mb={1}>
-              <EventIcon 
-                fontSize="small" 
-                sx={{ color: '#676879', fontSize: '16px' }}
-              />
-              <Typography 
-                variant="body2" 
-                sx={{
-                  color: '#323338',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                }}
-              >
-                資料
-              </Typography>
-            </Box>
-            {documents.slice(0, 2).map((document, index) => (
-              <Box key={document.id} mb={0.5}>
-                <Typography 
-                  variant="body2" 
-                  sx={{
-                    color: getStepColor(company.current_step),
-                    fontSize: '12px',
-                    fontWeight: 500,
-                    textDecoration: 'none',
-                    '&:hover': {
-                      textDecoration: 'underline',
-                    },
-                  }}
-                  component="a"
-                  href={document.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {document.title}
-                </Typography>
-              </Box>
-            ))}
-            {documents.length > 2 && (
-              <Typography 
-                variant="caption" 
-                sx={{
-                  color: '#676879',
-                  fontSize: '11px',
-                  fontStyle: 'italic',
-                }}
-              >
-                他 {documents.length - 2} 件
-              </Typography>
-            )}
-          </Box>
-        )}
-
-        {/* Links and Memo */}
-        <Box mb={2}>
-          {company.mypage_url && (
-            <Box display="flex" alignItems="center" gap={1} mb={1.5}>
-              <LinkIcon 
-                fontSize="small" 
-                sx={{ color: '#676879', fontSize: '16px' }}
-              />
-              <Typography 
-                variant="body2" 
-                sx={{
-                  color: getStepColor(company.current_step),
-                  fontSize: '13px',
+                  fontSize: '12px',
                   fontWeight: 500,
-                  textDecoration: 'none',
-                  '&:hover': {
-                    textDecoration: 'underline',
-                  },
                 }}
-                component="a"
-                href={company.mypage_url}
-                target="_blank"
-                rel="noopener noreferrer"
               >
-                マイページを開く
+                {schedules.length}
               </Typography>
             </Box>
           )}
-
-          {company.memo && (
-            <Typography
-              variant="body2"
-              sx={{
-                color: '#676879',
-                fontSize: '12px',
-                fontStyle: 'italic',
-                lineHeight: 1.4,
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              {company.memo}
-            </Typography>
+          {documents.length > 0 && (
+            <Box display="flex" alignItems="center" gap={0.5}>
+              <DocumentIcon 
+                fontSize="small" 
+                sx={{ color: getStepColor(company.current_step), fontSize: '16px' }}
+              />
+              <Typography 
+                variant="body2" 
+                sx={{
+                  color: '#676879',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                }}
+              >
+                {documents.length}
+              </Typography>
+            </Box>
           )}
-        </Box>
-
-        {/* Last Updated */}
-        <Box 
-          mt={3} 
-          pt={2} 
-          borderTop="1px solid" 
-          borderColor="#f1f2f4"
-          display="flex"
-          alignItems="center"
-          justifyContent="space-between"
-        >
-          <Box display="flex" alignItems="center" gap={0.5}>
-            <EventIcon 
-              fontSize="small" 
-              sx={{ 
-                color: '#676879',
-                fontSize: '14px',
-              }} 
-            />
-            <Typography 
-              variant="caption" 
-              sx={{
-                color: '#676879',
-                fontSize: '11px',
-                fontWeight: 500,
-              }}
-            >
-              更新: {new Date(company.updated_at).toLocaleDateString('ja-JP')}
-            </Typography>
-          </Box>
           {company.mypage_url && (
-            <Box
-              sx={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                bgcolor: '#00c875',
-              }}
+            <LinkIcon 
+              fontSize="small" 
+              sx={{ color: getStepColor(company.current_step), fontSize: '16px' }}
             />
           )}
         </Box>

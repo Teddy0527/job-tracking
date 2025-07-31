@@ -1,0 +1,26 @@
+main (本番環境)
+├── develop (開発環境)
+├── feature/企業カード機能
+├── feature/google-calendar連携
+├── feature/ファイルアップロード
+└── hotfix/緊急修正
+
+
+1. 日常的な開発フロー
+
+# 新機能開発時
+git checkout develop
+git pull origin develop
+git checkout -b feature/google-calendar連携
+# 開発作業...
+git add .
+git commit -m "feat: Google Calendar API統合機能追加"
+git push origin feature/google-calendar連携
+
+# GitHub上でPull Request作成
+# レビュー後、developにマージ
+# ブランチ削除
+git branch -d feature/google-calendar連携
+
+
+https://note.com/nexttech/n/n476dba612194

@@ -18,8 +18,6 @@ import {
   MoreVert as MoreIcon,
   Business as BusinessIcon,
   Link as LinkIcon,
-  Event as EventIcon,
-  DragIndicator as DragIcon,
   Schedule as ScheduleIcon,
   Description as DocumentIcon,
 } from '@mui/icons-material';
@@ -45,6 +43,7 @@ const DraggableCompanyCard: React.FC<DraggableCompanyCardProps> = ({
   isDragging = false,
 }) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [dragStarted, setDragStarted] = React.useState(false);
   const open = Boolean(anchorEl);
 
   const {
@@ -87,14 +86,34 @@ const DraggableCompanyCard: React.FC<DraggableCompanyCardProps> = ({
   };
 
   const handleCardClick = (event: React.MouseEvent) => {
-    // ドラッグハンドルやメニューボタンがクリックされた場合は詳細表示をしない
-    if (!sortableIsDragging && 
-        event.target === event.currentTarget || 
-        (event.target as HTMLElement).closest('.card-content')) {
-      if (onViewDetail) {
-        onViewDetail(company);
-      }
+    // ドラッグが開始されていた場合は詳細表示をしない
+    if (dragStarted || sortableIsDragging) {
+      return;
     }
+    
+    // メニューボタンがクリックされた場合は詳細表示をしない
+    if ((event.target as HTMLElement).closest('button')) {
+      return;
+    }
+
+    if (onViewDetail) {
+      onViewDetail(company);
+    }
+  };
+
+  const handleMouseDown = () => {
+    setDragStarted(false);
+  };
+
+  const handleDragStart = () => {
+    setDragStarted(true);
+  };
+
+  const handleDragEnd = () => {
+    // ドラッグ終了後、少し待ってからクリック可能状態に戻す
+    setTimeout(() => {
+      setDragStarted(false);
+    }, 100);
   };
 
   const getStatusColor = (status: string) => {
@@ -138,7 +157,7 @@ const DraggableCompanyCard: React.FC<DraggableCompanyCardProps> = ({
         borderRadius: '12px',
         border: '1px solid #e1e4e7',
         bgcolor: 'white',
-        cursor: sortableIsDragging ? 'grabbing' : 'pointer',
+        cursor: sortableIsDragging ? 'grabbing' : 'grab',
         transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
         transform: sortableIsDragging ? 'rotate(3deg)' : 'none',
         backgroundColor: sortableIsDragging ? alpha(getStepColor(company.current_step), 0.08) : 'white',
@@ -150,29 +169,15 @@ const DraggableCompanyCard: React.FC<DraggableCompanyCardProps> = ({
         },
       }}
       {...attributes}
+      {...listeners}
+      onMouseDown={handleMouseDown}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
     >
       <CardContent className="card-content" sx={{ p: 3, '&:last-child': { pb: 3 } }}>
-        {/* Header with Drag Handle */}
+        {/* Header */}
         <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
           <Box display="flex" alignItems="center" gap={1} flex={1}>
-            <Box 
-              {...listeners}
-              sx={{ 
-                display: 'flex', 
-                alignItems: 'center',
-                cursor: 'grab',
-                p: 0.5,
-                borderRadius: 1,
-                '&:hover': {
-                  backgroundColor: 'rgba(0,0,0,0.04)',
-                },
-                '&:active': {
-                  cursor: 'grabbing',
-                }
-              }}
-            >
-              <DragIcon fontSize="small" color="action" />
-            </Box>
             <Avatar sx={{ bgcolor: getStepColor(company.current_step), width: 28, height: 28 }}>
               <BusinessIcon fontSize="small" />
             </Avatar>
@@ -186,7 +191,13 @@ const DraggableCompanyCard: React.FC<DraggableCompanyCardProps> = ({
           <IconButton 
             size="small" 
             onClick={handleMenuClick}
-            sx={{ ml: 1, flexShrink: 0 }}
+            sx={{ 
+              ml: 1, 
+              flexShrink: 0,
+              position: 'relative',
+              zIndex: 10,
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
           >
             <MoreIcon />
           </IconButton>
@@ -235,110 +246,29 @@ const DraggableCompanyCard: React.FC<DraggableCompanyCardProps> = ({
           />
         </Box>
 
-        {/* Schedules */}
-        {schedules.length > 0 && (
-          <Box mb={2}>
-            <Box display="flex" alignItems="center" gap={1} mb={1}>
-              <ScheduleIcon fontSize="small" color="action" />
-              <Typography variant="body2" fontWeight="medium" fontSize="0.8rem">
-                スケジュール
+        {/* Compact indicators */}
+        <Box display="flex" alignItems="center" gap={1} mb={1}>
+          {schedules.length > 0 && (
+            <Box display="flex" alignItems="center" gap={0.5}>
+              <ScheduleIcon fontSize="small" sx={{ color: getStepColor(company.current_step), fontSize: '14px' }} />
+              <Typography variant="caption" fontSize="0.7rem" color="text.secondary">
+                {schedules.length}
               </Typography>
             </Box>
-            {schedules.slice(0, 1).map((schedule) => (
-              <Box key={schedule.id} display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
-                <Typography variant="body2" color="text.secondary" fontSize="0.75rem" noWrap>
-                  {schedule.title}
-                </Typography>
-                <Typography variant="body2" color="primary" fontSize="0.75rem">
-                  {new Date(schedule.date).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}
-                </Typography>
-              </Box>
-            ))}
-            {schedules.length > 1 && (
-              <Typography variant="caption" color="text.secondary" fontSize="0.7rem">
-                他 {schedules.length - 1} 件
-              </Typography>
-            )}
-          </Box>
-        )}
-
-        {/* Documents */}
-        {documents.length > 0 && (
-          <Box mb={2}>
-            <Box display="flex" alignItems="center" gap={1} mb={1}>
-              <DocumentIcon fontSize="small" color="action" />
-              <Typography variant="body2" fontWeight="medium" fontSize="0.8rem">
-                資料
+          )}
+          {documents.length > 0 && (
+            <Box display="flex" alignItems="center" gap={0.5}>
+              <DocumentIcon fontSize="small" sx={{ color: getStepColor(company.current_step), fontSize: '14px' }} />
+              <Typography variant="caption" fontSize="0.7rem" color="text.secondary">
+                {documents.length}
               </Typography>
             </Box>
-            {documents.slice(0, 1).map((document) => (
-              <Box key={document.id} mb={0.5}>
-                <Typography
-                  variant="body2"
-                  color="primary"
-                  fontSize="0.75rem"
-                  component="a"
-                  href={document.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{
-                    textDecoration: 'none',
-                    '&:hover': {
-                      textDecoration: 'underline',
-                    },
-                  }}
-                  noWrap
-                >
-                  {document.title}
-                </Typography>
-              </Box>
-            ))}
-            {documents.length > 1 && (
-              <Typography variant="caption" color="text.secondary" fontSize="0.7rem">
-                他 {documents.length - 1} 件
-              </Typography>
-            )}
-          </Box>
-        )}
-
-        {/* Links */}
-        {company.mypage_url && (
-          <Box display="flex" alignItems="center" gap={1} mb={1}>
-            <LinkIcon fontSize="small" color="action" />
-            <Typography variant="body2" color="primary" noWrap fontSize="0.8rem">
-              マイページ
-            </Typography>
-          </Box>
-        )}
-
-        {/* Memo */}
-        {company.memo && (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            fontSize="0.75rem"
-            sx={{
-              fontStyle: 'italic',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              lineHeight: 1.3,
-              mb: 1,
-            }}
-          >
-            {company.memo}
-          </Typography>
-        )}
-
-        {/* Last Updated */}
-        <Box pt={1} borderTop="1px solid" borderColor="grey.200">
-          <Typography variant="caption" color="text.secondary" fontSize="0.7rem">
-            <EventIcon fontSize="small" sx={{ mr: 0.5, verticalAlign: 'middle' }} />
-            更新: {new Date(company.updated_at).toLocaleDateString('ja-JP')}
-          </Typography>
+          )}
+          {company.mypage_url && (
+            <LinkIcon fontSize="small" sx={{ color: getStepColor(company.current_step), fontSize: '14px' }} />
+          )}
         </Box>
+
       </CardContent>
 
       {/* Menu */}

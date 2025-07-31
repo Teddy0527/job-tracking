@@ -19,6 +19,7 @@ import {
 import {
   SortableContext,
   verticalListSortingStrategy,
+  arrayMove,
 } from '@dnd-kit/sortable';
 import { Company, SELECTION_STEPS, Schedule, CompanyDocument } from '../types';
 import CompanyCard from './CompanyCard';
@@ -46,6 +47,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [companyDocuments, setCompanyDocuments] = React.useState<Record<string, CompanyDocument[]>>({});
   const [selectedCompany, setSelectedCompany] = React.useState<Company | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = React.useState(false);
+  const [localCompanies, setLocalCompanies] = React.useState<Company[]>(companies);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -55,6 +57,11 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }),
     useSensor(KeyboardSensor)
   );
+
+  // Sync local companies with props
+  React.useEffect(() => {
+    setLocalCompanies(companies);
+  }, [companies]);
 
   // Load schedules and documents for all companies
   React.useEffect(() => {
@@ -134,7 +141,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     const { active } = event;
     setActiveId(active.id as string);
     
-    const company = companies.find(c => c.id === active.id);
+    const company = localCompanies.find(c => c.id === active.id);
     setDraggedCompany(company || null);
     console.log('Drag started:', active.id);
   };
@@ -161,14 +168,24 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
     const activeId = active.id as string;
     const overId = over.id as string;
+    const draggedCompany = localCompanies.find(c => c.id === activeId);
+    
+    if (!draggedCompany) {
+      console.log('Dragged company not found');
+      return;
+    }
 
-    // ステップエリアにドロップされた場合
+    // 同じカードの場合は何もしない
+    if (activeId === overId) {
+      return;
+    }
+
+    // ドロップターゲットがステップエリアの場合
     if (overId.startsWith('step-')) {
       const newStep = parseInt(overId.replace('step-', ''));
-      const company = companies.find(c => c.id === activeId);
       
-      if (company && company.current_step !== newStep) {
-        console.log(`Moving company ${company.name} from step ${company.current_step} to step ${newStep}`);
+      if (draggedCompany.current_step !== newStep) {
+        console.log(`Moving company ${draggedCompany.name} from step ${draggedCompany.current_step} to step ${newStep}`);
         
         try {
           const { error } = await updateCompany(activeId, { 
@@ -186,8 +203,67 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
           console.error('Error updating company step:', error);
           alert('ステップの更新に失敗しました。');
         }
+      }
+      return;
+    }
+
+    // ドロップターゲットが他のカードの場合（カード間のソート）
+    const targetCompany = localCompanies.find(c => c.id === overId);
+    if (targetCompany) {
+      // 同じステップ内でのソート
+      if (draggedCompany.current_step === targetCompany.current_step) {
+        const stepCompanies = localCompanies.filter(c => c.current_step === draggedCompany.current_step);
+        const oldIndex = stepCompanies.findIndex(c => c.id === activeId);
+        const newIndex = stepCompanies.findIndex(c => c.id === overId);
+        
+        if (oldIndex !== newIndex) {
+          const sortedStepCompanies = arrayMove(stepCompanies, oldIndex, newIndex);
+          
+          // ローカル状態を更新（即座にUIに反映）
+          const newLocalCompanies = localCompanies.map(company => {
+            if (company.current_step === draggedCompany.current_step) {
+              const newPosition = sortedStepCompanies.findIndex(c => c.id === company.id);
+              return { ...company, sort_order: newPosition };
+            }
+            return company;
+          });
+          
+          setLocalCompanies(newLocalCompanies);
+          
+          // バックエンドに順序を保存
+          try {
+            for (let i = 0; i < sortedStepCompanies.length; i++) {
+              await updateCompany(sortedStepCompanies[i].id, { sort_order: i });
+            }
+            console.log('Successfully updated company order');
+            onRefresh();
+          } catch (error) {
+            console.error('Error updating company order:', error);
+            alert('順序の更新に失敗しました。');
+            // エラーの場合は元の状態に戻す
+            setLocalCompanies(companies);
+          }
+        }
       } else {
-        console.log('No step change needed');
+        // 異なるステップへの移動
+        console.log(`Moving company ${draggedCompany.name} from step ${draggedCompany.current_step} to step ${targetCompany.current_step}`);
+        
+        try {
+          const { error } = await updateCompany(activeId, { 
+            current_step: targetCompany.current_step 
+          });
+          
+          if (error) {
+            console.error('Error updating company step:', error);
+            alert('ステップの更新に失敗しました。');
+          } else {
+            console.log('Successfully updated company step');
+            onRefresh();
+          }
+        } catch (error) {
+          console.error('Error updating company step:', error);
+          alert('ステップの更新に失敗しました。');
+        }
       }
     }
   };
@@ -237,9 +313,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       <Box>
         <Box sx={{ display: 'flex', gap: 3, overflowX: 'auto', pb: 3 }}>
           {SELECTION_STEPS.map((step) => {
-            const stepCompanies = companies.filter(
-              (company) => company.current_step === step.id
-            );
+            const stepCompanies = localCompanies
+              .filter((company) => company.current_step === step.id)
+              .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
 
             return (
               <Paper
