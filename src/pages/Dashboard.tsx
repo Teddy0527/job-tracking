@@ -206,43 +206,29 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
       {/* Main Content */}
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Box mb={4} display="flex" justifyContent="space-between" alignItems="flex-start">
-          <Box>
+        <Box mb={2} display="flex" justifyContent="space-between" alignItems="flex-start">
+          <Box display="flex" alignItems="center" gap={3}>
             <Typography 
-              variant="h3" 
-              component="h1" 
-              sx={{ 
-                fontWeight: 700,
-                color: '#323338',
-                fontSize: '32px',
-                mb: 1,
+              variant="body1" 
+              sx={{
+                color: '#676879',
+                fontSize: '16px',
               }}
             >
-              企業管理ダッシュボード
+              応募中の企業: <strong style={{ color: '#323338' }}>{companies.length}社</strong>
             </Typography>
-            <Box display="flex" alignItems="center" gap={3}>
-              <Typography 
-                variant="body1" 
-                sx={{
-                  color: '#676879',
-                  fontSize: '16px',
-                }}
-              >
-                応募中の企業: <strong style={{ color: '#323338' }}>{companies.length}社</strong>
-              </Typography>
-              <Box
-                sx={{
-                  px: 2,
-                  py: 0.5,
-                  bgcolor: companies.length > 0 ? '#e1f5fe' : '#fff3e0',
-                  color: companies.length > 0 ? '#0277bd' : '#f57c00',
-                  borderRadius: '16px',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                }}
-              >
-                {companies.length > 0 ? 'アクティブ' : '企業を追加してください'}
-              </Box>
+            <Box
+              sx={{
+                px: 2,
+                py: 0.5,
+                bgcolor: companies.length > 0 ? '#e1f5fe' : '#fff3e0',
+                color: companies.length > 0 ? '#0277bd' : '#f57c00',
+                borderRadius: '16px',
+                fontSize: '12px',
+                fontWeight: 600,
+              }}
+            >
+              {companies.length > 0 ? 'アクティブ' : '企業を追加してください'}
             </Box>
           </Box>
           
