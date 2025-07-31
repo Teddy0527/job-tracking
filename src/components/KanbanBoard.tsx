@@ -311,7 +311,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       onDragEnd={handleDragEnd}
     >
       <Box>
-        <Box sx={{ display: 'flex', gap: 3, overflowX: 'auto', pb: 3 }}>
+        <Box sx={{ display: 'flex', gap: 2, pb: 3, width: '100%' }}>
           {SELECTION_STEPS.map((step) => {
             const stepCompanies = localCompanies
               .filter((company) => company.current_step === step.id)
@@ -322,8 +322,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 key={step.id}
                 elevation={0}
                 sx={{
-                  minWidth: 300,
-                  flex: '1 1 300px',
+                  flex: '1',
+                  minWidth: 0,
                   minHeight: '75vh',
                   backgroundColor: 'white',
                   border: '1px solid #e1e4e7',
