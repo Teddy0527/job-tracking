@@ -23,11 +23,22 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
 
 // Auth helper functions
 export const signInWithGoogle = async () => {
-  // 開発環境では localhost:3000、本番環境では実際のドメインを使用
-  const redirectUrl = process.env.REACT_APP_REDIRECT_URL || `${window.location.origin}/dashboard`;
+  // 動的にリダイレクトURLを生成（3000, 3001, 3002などに対応）
+  const currentOrigin = window.location.origin;
+  const isLocalhost = currentOrigin.includes('localhost');
+  
+  let redirectUrl;
+  if (isLocalhost) {
+    // localhost:3000, localhost:3001, localhost:3002 など自動対応
+    redirectUrl = `${currentOrigin}/dashboard`;
+  } else {
+    // 本番環境では環境変数を使用
+    redirectUrl = process.env.REACT_APP_REDIRECT_URL || `${currentOrigin}/dashboard`;
+  }
   
   console.log('Auth redirect URL:', redirectUrl);
-  console.log('Current origin:', window.location.origin);
+  console.log('Current origin:', currentOrigin);
+  console.log('Is localhost:', isLocalhost);
   
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
