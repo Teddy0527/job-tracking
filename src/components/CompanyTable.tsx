@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -17,14 +17,18 @@ import {
   TableSortLabel,
   TextField,
   InputAdornment,
+  Badge,
+  Tooltip,
 } from '@mui/material';
 import {
   MoreVert as MoreIcon,
   Search as SearchIcon,
   Link as LinkIcon,
+  Description as DocumentIcon,
+  CalendarToday as CalendarIcon,
 } from '@mui/icons-material';
-import { Company, SELECTION_STEPS } from '../types';
-import { deleteCompany } from '../services/supabase';
+import { Company, SELECTION_STEPS, Schedule, CompanyDocument } from '../types';
+import { deleteCompany, getSchedules, getCompanyDocuments } from '../services/supabase';
 
 interface CompanyTableProps {
   companies: Company[];
@@ -45,6 +49,44 @@ const CompanyTable: React.FC<CompanyTableProps> = ({
   const [sortField, setSortField] = useState<SortField>('updated_at');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [searchTerm, setSearchTerm] = useState('');
+  const [companySchedules, setCompanySchedules] = useState<Record<string, Schedule[]>>({});
+  const [companyDocuments, setCompanyDocuments] = useState<Record<string, CompanyDocument[]>>({});
+
+  // Load schedules and documents for all companies
+  useEffect(() => {
+    const loadSchedulesAndDocuments = async () => {
+      const schedules: Record<string, Schedule[]> = {};
+      const documents: Record<string, CompanyDocument[]> = {};
+
+      for (const company of companies) {
+        try {
+          const { data: scheduleData, error: scheduleError } = await getSchedules(company.id);
+          const { data: documentData, error: documentError } = await getCompanyDocuments(company.id);
+          
+          if (scheduleError) {
+            console.error(`Error loading schedules for company ${company.name}:`, scheduleError);
+          }
+          if (documentError) {
+            console.error(`Error loading documents for company ${company.name}:`, documentError);
+          }
+          
+          schedules[company.id] = scheduleData || [];
+          documents[company.id] = documentData || [];
+        } catch (error) {
+          console.error(`Error loading data for company ${company.id}:`, error);
+          schedules[company.id] = [];
+          documents[company.id] = [];
+        }
+      }
+
+      setCompanySchedules(schedules);
+      setCompanyDocuments(documents);
+    };
+
+    if (companies.length > 0) {
+      loadSchedulesAndDocuments();
+    }
+  }, [companies]);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>, company: Company) => {
     setAnchorEl(event.currentTarget);
@@ -113,6 +155,23 @@ const CompanyTable: React.FC<CompanyTableProps> = ({
   const getProgress = (stepId: number) => {
     const step = SELECTION_STEPS.find(s => s.id === stepId);
     return step?.progress || 0;
+  };
+
+  const getUpcomingSchedules = (companyId: string) => {
+    const schedules = companySchedules[companyId] || [];
+    const today = new Date().toISOString().split('T')[0];
+    return schedules
+      .filter(schedule => schedule.date >= today)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(0, 2);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ja-JP', {
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   // Filter and sort companies
@@ -255,6 +314,16 @@ const CompanyTable: React.FC<CompanyTableProps> = ({
               </TableCell>
               <TableCell>
                 <Typography variant="subtitle2" fontWeight="bold">
+                  スケジュール
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography variant="subtitle2" fontWeight="bold">
+                  資料
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography variant="subtitle2" fontWeight="bold">
                   リンク
                 </Typography>
               </TableCell>
@@ -279,7 +348,7 @@ const CompanyTable: React.FC<CompanyTableProps> = ({
           <TableBody>
             {filteredAndSortedCompanies.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
                   <Typography color="text.secondary">
                     {searchTerm ? '検索結果が見つかりません' : '企業データがありません'}
                   </Typography>
@@ -289,14 +358,32 @@ const CompanyTable: React.FC<CompanyTableProps> = ({
               filteredAndSortedCompanies.map((company) => (
                 <TableRow key={company.id} hover>
                   <TableCell>
-                    <Typography variant="body2" fontWeight="medium">
-                      {company.name}
-                    </Typography>
-                    {company.memo && (
-                      <Typography variant="caption" color="text.secondary" noWrap>
-                        {company.memo}
+                    <Box>
+                      <Typography variant="body2" fontWeight="medium" sx={{ mb: 0.5 }}>
+                        {company.name}
                       </Typography>
-                    )}
+                      {company.application_date && (
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          応募日: {new Date(company.application_date).toLocaleDateString('ja-JP')}
+                        </Typography>
+                      )}
+                      {company.memo && (
+                        <Typography 
+                          variant="caption" 
+                          color="text.secondary" 
+                          sx={{ 
+                            display: 'block',
+                            maxWidth: '200px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}
+                          title={company.memo}
+                        >
+                          📝 {company.memo}
+                        </Typography>
+                      )}
+                    </Box>
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2">
@@ -310,16 +397,51 @@ const CompanyTable: React.FC<CompanyTableProps> = ({
                   </TableCell>
                   <TableCell>
                     <Box>
-                      <Typography variant="body2" mb={0.5}>
-                        {getStepName(company.current_step)}
-                      </Typography>
+                      <Box display="flex" alignItems="center" gap={1} mb={0.5}>
+                        <Box
+                          sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            backgroundColor: (() => {
+                              switch (company.current_step) {
+                                case 1: return '#579bfc';
+                                case 2: return '#a25ddc';
+                                case 3: return '#ff642e';
+                                case 4: return '#e2445c';
+                                case 5: return '#00c875';
+                                default: return '#c4c4c4';
+                              }
+                            })(),
+                          }}
+                        />
+                        <Typography variant="body2" fontWeight="medium">
+                          {getStepName(company.current_step)}
+                        </Typography>
+                      </Box>
                       <LinearProgress
                         variant="determinate"
                         value={getProgress(company.current_step)}
-                        sx={{ height: 4, borderRadius: 2 }}
+                        sx={{ 
+                          height: 6, 
+                          borderRadius: 3,
+                          bgcolor: 'grey.200',
+                          '& .MuiLinearProgress-bar': {
+                            backgroundColor: (() => {
+                              switch (company.current_step) {
+                                case 1: return '#579bfc';
+                                case 2: return '#a25ddc';
+                                case 3: return '#ff642e';
+                                case 4: return '#e2445c';
+                                case 5: return '#00c875';
+                                default: return '#c4c4c4';
+                              }
+                            })(),
+                          }
+                        }}
                       />
-                      <Typography variant="caption" color="text.secondary">
-                        {getProgress(company.current_step)}%
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                        進捗: {getProgress(company.current_step)}%
                       </Typography>
                     </Box>
                   </TableCell>
@@ -338,6 +460,55 @@ const CompanyTable: React.FC<CompanyTableProps> = ({
                         },
                       }}
                     />
+                  </TableCell>
+                  <TableCell>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      {getUpcomingSchedules(company.id).length > 0 ? (
+                        <>
+                          <Tooltip 
+                            title={
+                              <Box>
+                                {getUpcomingSchedules(company.id).map((schedule, index) => (
+                                  <Typography key={index} variant="caption" display="block">
+                                    {formatDate(schedule.date)}: {schedule.title}
+                                  </Typography>
+                                ))}
+                              </Box>
+                            }
+                          >
+                            <Badge 
+                              badgeContent={getUpcomingSchedules(company.id).length} 
+                              color="primary"
+                              sx={{ cursor: 'pointer' }}
+                            >
+                              <CalendarIcon fontSize="small" color="action" />
+                            </Badge>
+                          </Tooltip>
+                          <Typography variant="caption" color="text.secondary">
+                            {formatDate(getUpcomingSchedules(company.id)[0].date)}
+                          </Typography>
+                        </>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          -
+                        </Typography>
+                      )}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      {companyDocuments[company.id]?.length > 0 ? (
+                        <Tooltip title={`${companyDocuments[company.id].length}件の資料`}>
+                          <Badge badgeContent={companyDocuments[company.id].length} color="secondary">
+                            <DocumentIcon fontSize="small" color="action" />
+                          </Badge>
+                        </Tooltip>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          -
+                        </Typography>
+                      )}
+                    </Box>
                   </TableCell>
                   <TableCell>
                     {company.mypage_url ? (
