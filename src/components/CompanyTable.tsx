@@ -15,12 +15,9 @@ import {
   Menu,
   MenuItem,
   TableSortLabel,
-  TextField,
-  InputAdornment,
 } from '@mui/material';
 import {
   MoreVert as MoreIcon,
-  Search as SearchIcon,
   Link as LinkIcon,
 } from '@mui/icons-material';
 import { Company, SELECTION_STEPS } from '../types';
@@ -32,7 +29,7 @@ interface CompanyTableProps {
   onRefresh: () => void;
 }
 
-type SortField = 'name' | 'industry' | 'position' | 'current_step' | 'status' | 'updated_at';
+type SortField = 'name' | 'current_step' | 'status' | 'updated_at';
 type SortOrder = 'asc' | 'desc';
 
 const CompanyTable: React.FC<CompanyTableProps> = ({
@@ -44,7 +41,6 @@ const CompanyTable: React.FC<CompanyTableProps> = ({
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [sortField, setSortField] = useState<SortField>('updated_at');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [searchTerm, setSearchTerm] = useState('');
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>, company: Company) => {
     setAnchorEl(event.currentTarget);
@@ -115,17 +111,8 @@ const CompanyTable: React.FC<CompanyTableProps> = ({
     return step?.progress || 0;
   };
 
-  // Filter and sort companies
+  // Sort companies
   const filteredAndSortedCompanies = companies
-    .filter(company => {
-      const searchLower = searchTerm.toLowerCase();
-      return (
-        company.name.toLowerCase().includes(searchLower) ||
-        (company.industry?.toLowerCase().includes(searchLower)) ||
-        (company.position?.toLowerCase().includes(searchLower)) ||
-        company.status.toLowerCase().includes(searchLower)
-      );
-    })
     .sort((a, b) => {
       let aValue: any;
       let bValue: any;
@@ -134,14 +121,6 @@ const CompanyTable: React.FC<CompanyTableProps> = ({
         case 'name':
           aValue = a.name;
           bValue = b.name;
-          break;
-        case 'industry':
-          aValue = a.industry || '';
-          bValue = b.industry || '';
-          break;
-        case 'position':
-          aValue = a.position || '';
-          bValue = b.position || '';
           break;
         case 'current_step':
           aValue = a.current_step;
@@ -174,30 +153,12 @@ const CompanyTable: React.FC<CompanyTableProps> = ({
 
   return (
     <Box>
-      {/* Search */}
-      <Box mb={2}>
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="企業名、業界、職種、ステータスで検索..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-          sx={{ maxWidth: 400 }}
-        />
-      </Box>
 
       {/* Table */}
       <TableContainer component={Paper} elevation={2}>
-        <Table>
+        <Table size="small">
           <TableHead>
-            <TableRow sx={{ bgcolor: 'grey.50' }}>
+            <TableRow sx={{ bgcolor: 'grey.50', height: 48 }}>
               <TableCell>
                 <TableSortLabel
                   active={sortField === 'name'}
@@ -206,28 +167,6 @@ const CompanyTable: React.FC<CompanyTableProps> = ({
                 >
                   <Typography variant="subtitle2" fontWeight="bold">
                     企業名
-                  </Typography>
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={sortField === 'industry'}
-                  direction={sortField === 'industry' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('industry')}
-                >
-                  <Typography variant="subtitle2" fontWeight="bold">
-                    業界
-                  </Typography>
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={sortField === 'position'}
-                  direction={sortField === 'position' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('position')}
-                >
-                  <Typography variant="subtitle2" fontWeight="bold">
-                    職種
                   </Typography>
                 </TableSortLabel>
               </TableCell>
@@ -279,89 +218,81 @@ const CompanyTable: React.FC<CompanyTableProps> = ({
           <TableBody>
             {filteredAndSortedCompanies.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                   <Typography color="text.secondary">
-                    {searchTerm ? '検索結果が見つかりません' : '企業データがありません'}
+                    企業データがありません
                   </Typography>
                 </TableCell>
               </TableRow>
             ) : (
               filteredAndSortedCompanies.map((company) => (
-                <TableRow key={company.id} hover>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight="medium">
+                <TableRow key={company.id} hover sx={{ height: 56 }}>
+                  <TableCell sx={{ py: 1 }}>
+                    <Typography variant="body2" fontWeight="medium" sx={{ fontSize: '14px' }}>
                       {company.name}
                     </Typography>
                     {company.memo && (
-                      <Typography variant="caption" color="text.secondary" noWrap>
+                      <Typography variant="caption" color="text.secondary" noWrap sx={{ fontSize: '12px' }}>
                         {company.memo}
                       </Typography>
                     )}
                   </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {company.industry || '-'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {company.position || '-'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ py: 1 }}>
                     <Box>
-                      <Typography variant="body2" mb={0.5}>
+                      <Typography variant="body2" sx={{ fontSize: '14px', mb: 0.5 }}>
                         {getStepName(company.current_step)}
                       </Typography>
                       <LinearProgress
                         variant="determinate"
                         value={getProgress(company.current_step)}
-                        sx={{ height: 4, borderRadius: 2 }}
+                        sx={{ height: 3, borderRadius: 2 }}
                       />
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '11px' }}>
                         {getProgress(company.current_step)}%
                       </Typography>
                     </Box>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ py: 1 }}>
                     <Chip
                       label={company.status}
                       size="small"
                       color={getStatusColor(company.status) as any}
                       variant="outlined"
                       sx={{
-                        height: 20,
-                        fontSize: '0.7rem',
+                        height: 18,
+                        fontSize: '11px',
                         '& .MuiChip-label': {
-                          px: 1,
+                          px: 0.5,
                           py: 0,
                         },
                       }}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ py: 1 }}>
                     {company.mypage_url ? (
                       <IconButton
                         size="small"
                         onClick={() => window.open(company.mypage_url, '_blank')}
+                        sx={{ p: 0.5 }}
                       >
                         <LinkIcon fontSize="small" />
                       </IconButton>
                     ) : (
-                      '-'
+                      <Typography variant="body2" sx={{ fontSize: '14px', color: 'text.secondary' }}>-</Typography>
                     )}
                   </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
+                  <TableCell sx={{ py: 1 }}>
+                    <Typography variant="body2" sx={{ fontSize: '14px' }}>
                       {new Date(company.updated_at).toLocaleDateString('ja-JP')}
                     </Typography>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ py: 1 }}>
                     <IconButton
                       size="small"
                       onClick={(e) => handleMenuClick(e, company)}
+                      sx={{ p: 0.5 }}
                     >
-                      <MoreIcon />
+                      <MoreIcon fontSize="small" />
                     </IconButton>
                   </TableCell>
                 </TableRow>
@@ -374,7 +305,6 @@ const CompanyTable: React.FC<CompanyTableProps> = ({
       {/* Summary */}
       <Box mt={2} display="flex" justifyContent="space-between" alignItems="center">
         <Typography variant="body2" color="text.secondary">
-          {searchTerm ? `${filteredAndSortedCompanies.length}件中 ` : ''}
           全{companies.length}社を表示
         </Typography>
       </Box>
