@@ -33,7 +33,7 @@ const LoginPage: React.FC = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        bgcolor: '#f6f7fb',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -41,25 +41,73 @@ const LoginPage: React.FC = () => {
       }}
     >
       <Container maxWidth="sm">
-        <Card elevation={8} sx={{ borderRadius: 3 }}>
+        <Card 
+          elevation={0} 
+          sx={{ 
+            borderRadius: '12px',
+            border: '1px solid #e1e4e7',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+          }}
+        >
           <CardContent sx={{ p: 4 }}>
             <Box textAlign="center" mb={4}>
+              <Box
+                sx={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, #6c5dd3 0%, #7b68ee 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  fontSize: '24px',
+                  margin: '0 auto 16px',
+                }}
+              >
+                JT
+              </Box>
               <Typography
                 variant="h3"
                 component="h1"
-                fontWeight="bold"
-                color="primary"
-                mb={1}
+                sx={{
+                  fontWeight: 700,
+                  color: '#323338',
+                  fontSize: '32px',
+                  mb: 1,
+                }}
               >
-                📊 Job Tracker
+                Job Tracker
               </Typography>
-              <Typography variant="h6" color="text.secondary" mb={3}>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  color: '#676879',
+                  fontWeight: 400,
+                  fontSize: '18px',
+                  mb: 3,
+                }}
+              >
                 就活情報を一元管理しよう
               </Typography>
-              <Typography variant="body1" color="text.secondary" mb={2}>
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  color: '#676879',
+                  fontSize: '16px',
+                  mb: 2,
+                }}
+              >
                 企業カード • 選考ステップ • スケジュール管理
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: '#676879',
+                  fontSize: '14px',
+                }}
+              >
                 Google アカウントでかんたんログイン
               </Typography>
             </Box>
@@ -72,9 +120,17 @@ const LoginPage: React.FC = () => {
                 onClick={handleGoogleLogin}
                 sx={{
                   py: 1.5,
-                  fontSize: '1.1rem',
-                  borderRadius: 2,
+                  fontSize: '16px',
+                  borderRadius: '8px',
                   textTransform: 'none',
+                  fontWeight: 600,
+                  bgcolor: '#6c5dd3',
+                  color: 'white',
+                  boxShadow: '0 2px 8px rgba(108, 93, 211, 0.3)',
+                  '&:hover': {
+                    bgcolor: '#5a4fcf',
+                    boxShadow: '0 4px 12px rgba(108, 93, 211, 0.4)',
+                  },
                 }}
                 fullWidth
               >
@@ -83,7 +139,13 @@ const LoginPage: React.FC = () => {
             </Box>
 
             <Box mt={4} textAlign="center">
-              <Typography variant="caption" color="text.secondary">
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  color: '#676879',
+                  fontSize: '12px',
+                }}
+              >
                 利用することで、利用規約とプライバシーポリシーに同意したものとみなされます
               </Typography>
             </Box>
@@ -91,7 +153,14 @@ const LoginPage: React.FC = () => {
         </Card>
 
         <Box mt={3} textAlign="center">
-          <Typography variant="body2" color="white" sx={{ opacity: 0.8 }}>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: '#676879',
+              fontSize: '14px',
+              opacity: 0.8,
+            }}
+          >
             MVP版 v1.0 - 就活生のための情報管理ツール
           </Typography>
         </Box>
