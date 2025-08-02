@@ -89,4 +89,4 @@ export type SelectionStep = typeof SELECTION_STEPS[number];
 
 export type SelectionStatus = '合格' | '不合格' | '選考中';
 
-export type ViewMode = 'kanban' | 'table';
+export type ViewMode = 'kanban' | 'table' | 'calendar';
