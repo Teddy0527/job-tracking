@@ -78,11 +78,11 @@ export interface SharedBoard {
 }
 
 export const SELECTION_STEPS = [
-  { id: 1, name: 'ES提出', progress: 20 },
-  { id: 2, name: '書類選考', progress: 40 },
-  { id: 3, name: '一次面接', progress: 60 },
-  { id: 4, name: '最終面接', progress: 80 },
-  { id: 5, name: '内定', progress: 100 },
+  { id: 1, name: '検討中', progress: 0 },
+  { id: 2, name: 'ES提出済み', progress: 25 },
+  { id: 3, name: '選考中（書類・適性検査）', progress: 50 },
+  { id: 4, name: '選考中（面接）', progress: 75 },
+  { id: 5, name: '内定獲得', progress: 100 },
 ] as const;
 
 export type SelectionStep = typeof SELECTION_STEPS[number];
