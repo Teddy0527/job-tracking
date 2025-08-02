@@ -17,12 +17,14 @@ import {
   Logout as LogoutIcon,
   ViewKanban as KanbanIcon,
   TableChart as TableIcon,
+  CalendarMonth as CalendarIcon,
 } from '@mui/icons-material';
 import type { User } from '@supabase/supabase-js';
 import { signOut, getCompanies } from '../services/supabase';
 import { Company, ViewMode } from '../types';
 import KanbanBoard from '../components/KanbanBoard';
 import CompanyTable from '../components/CompanyTable';
+import CalendarView from '../components/CalendarView';
 import CompanyDialog from '../components/CompanyDialog';
 
 interface DashboardProps {
@@ -187,6 +189,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               <ToggleButton value="table" aria-label="table view">
                 <TableIcon fontSize="small" />
               </ToggleButton>
+              <ToggleButton value="calendar" aria-label="calendar view">
+                <CalendarIcon fontSize="small" />
+              </ToggleButton>
             </ToggleButtonGroup>
 
             <IconButton 
@@ -262,8 +267,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             onEditCompany={handleEditCompany}
             onRefresh={loadCompanies}
           />
-        ) : (
+        ) : viewMode === 'table' ? (
           <CompanyTable 
+            companies={companies} 
+            onEditCompany={handleEditCompany}
+            onRefresh={loadCompanies}
+          />
+        ) : (
+          <CalendarView 
             companies={companies} 
             onEditCompany={handleEditCompany}
             onRefresh={loadCompanies}
